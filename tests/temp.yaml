@@ -1,0 +1,6 @@
+
+        MyInstance:
+          class: MyClass
+          parameters:
+            param1: value1
+        
