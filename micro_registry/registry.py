@@ -57,13 +57,24 @@ def get_class_names_by_base(base_class_name: str):
 
 def load_instances_from_yaml(filename: str):
     with open(filename, 'r') as file:
-        data = yaml.safe_load(file)
+        load_instances_from_yaml_data(file)
+        # data = yaml.safe_load(file)
 
-        for instance_name, instance_info in data.items():
-            class_name = instance_info['class']
-            parameters = instance_info.get('parameters', {})
-            instance = create_instance(class_name, **parameters)
-            instance_registry[instance_name] = instance
+        # for instance_name, instance_info in data.items():
+        #     class_name = instance_info['class']
+        #     parameters = instance_info.get('parameters', {})
+        #     instance = create_instance(class_name, **parameters)
+        #     instance_registry[instance_name] = instance
+
+
+def load_instances_from_yaml_data(yaml_data: str):
+    data = yaml.safe_load(yaml_data)
+
+    for instance_name, instance_info in data.items():
+        class_name = instance_info['class']
+        parameters = instance_info.get('parameters', {})
+        instance = create_instance(class_name, **parameters)
+        instance_registry[instance_name] = instance
 
 
 def filter_instances_by_base_class(base_class):
@@ -71,4 +82,13 @@ def filter_instances_by_base_class(base_class):
     for instance_name, instance in instance_registry.items():
         if isinstance(instance, base_class):
             filtered_instances[instance_name] = instance
+    return filtered_instances
+
+
+def filter_instances_by_base_class_name(base_class_name):
+    filtered_instances = {}
+    for instance_name, instance in instance_registry.items():
+        for instance_base_class in type(instance).__bases__:
+            if instance_base_class.__name__ == base_class_name:
+                filtered_instances[instance_name] = instance
     return filtered_instances
