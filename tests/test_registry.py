@@ -14,10 +14,17 @@ from micro_registry.registry import (
 
 
 class TestMicroRegistry(unittest.TestCase):
+    @classmethod
     def setUp(self):
         # Reset the registries before each test
         class_registry.clear()
         instance_registry.clear()
+
+    @classmethod
+    def tearDownClass(cls):
+        # Cleanup the registry after tests
+        instance_registry.clear()
+        class_registry.clear()
 
     def test_register_class(self):
         @register_class

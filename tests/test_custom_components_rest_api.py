@@ -4,23 +4,34 @@ sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 import unittest
 from fastapi.testclient import TestClient
-from micro_registry.component_rest_api import ComponentRestApi
-from micro_registry.registry import instance_registry, register_class
-from custom_components import SensorComponent, ActuatorComponent, ControllerComponent
-
-register_class(SensorComponent)
-register_class(ActuatorComponent)
-register_class(ControllerComponent)
+from micro_registry.registry import instance_registry, register_class, class_registry
 
 
 class TestComponentTree(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+
+        # Cleanup the registry after tests
+        instance_registry.clear()
+        class_registry.clear()
+        from micro_registry.component_rest_api import ComponentRestApi
+        from custom_components import SensorComponent, ActuatorComponent, ControllerComponent
+
+        register_class(SensorComponent)
+        register_class(ActuatorComponent)
+        register_class(ControllerComponent)
+
         cls.api = ComponentRestApi()
         cls.client = TestClient(cls.api.app)
 
-    def test_create_controller_component(self):
+    @classmethod
+    def tearDownClass(cls):
+        # Cleanup the registry after tests
+        instance_registry.clear()
+        class_registry.clear()
+
+    def test_01_create_controller_component(self):
         """Test creating the controller component."""
         response = self.client.post("/create-component/", json={
             "class_name": "ControllerComponent",
@@ -30,7 +41,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("MainController", instance_registry)
 
-    def test_create_sensor_component(self):
+    def test_02_create_sensor_component(self):
         """Test creating the sensor component as a child of the controller."""
         response = self.client.post("/create-component/", json={
             "class_name": "SensorComponent",
@@ -41,7 +52,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("TemperatureSensor", instance_registry)
 
-    def test_create_actuator_component(self):
+    def test_03_create_actuator_component(self):
         """Test creating the actuator component as a child of the controller."""
         response = self.client.post("/create-component/", json={
             "class_name": "ActuatorComponent",
@@ -52,7 +63,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("CoolingFan", instance_registry)
 
-    def test_get_controller_hierarchy(self):
+    def test_04_get_controller_hierarchy(self):
         """Test retrieving the hierarchy of the controller component."""
         response = self.client.get("/component/MainController/hierarchy/")
         self.assertEqual(response.status_code, 200)
@@ -71,7 +82,7 @@ class TestComponentTree(unittest.TestCase):
         }
         self.assertEqual(response.json(), expected_hierarchy)
 
-    def test_read_sensor_property(self):
+    def test_05_read_sensor_property(self):
         """Test reading the 'reading' property of the sensor component."""
         response = self.client.get("/component/MainController/TemperatureSensor/attributes/")
         self.assertEqual(response.status_code, 200)
@@ -82,7 +93,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertTrue(attributes["reading"]["is_property"])
         self.assertTrue(attributes["reading"]["has_setter"])
 
-    def test_read_actuator_property(self):
+    def test_06_read_actuator_property(self):
         """Test reading the 'state' property of the actuator component."""
         response = self.client.get("/component/MainController/CoolingFan/attributes/")
         self.assertEqual(response.status_code, 200)
@@ -93,7 +104,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertTrue(attributes["state"]["is_property"])
         self.assertTrue(attributes["state"]["has_setter"])
 
-    def test_update_sensor_property(self):
+    def test_07_update_sensor_property(self):
         """Test updating the 'reading' property of the sensor component."""
         response = self.client.post("/component/MainController/TemperatureSensor/update-property/", json={
             "property_name": "reading",
@@ -102,7 +113,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(instance_registry["TemperatureSensor"].reading, 30.0)
 
-    def test_update_actuator_property(self):
+    def test_08_update_actuator_property(self):
         """Test updating the 'state' property of the actuator component."""
         response = self.client.post("/component/MainController/CoolingFan/update-property/", json={
             "property_name": "state",
@@ -111,7 +122,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(instance_registry["CoolingFan"].state)
 
-    def test_update_controller_property(self):
+    def test_09_update_controller_property(self):
         """Test updating the 'setpoint' property of the controller component."""
         response = self.client.post("/component/MainController/update-property/", json={
             "property_name": "setpoint",
@@ -120,7 +131,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(instance_registry["MainController"].setpoint, 80.0)
 
-    def test_invalid_sensor_reading(self):
+    def test_10_invalid_sensor_reading(self):
         """Test that setting an invalid 'reading' value on the sensor raises an error."""
         response = self.client.post("/component/MainController/TemperatureSensor/update-property/", json={
             "property_name": "reading",
@@ -128,7 +139,7 @@ class TestComponentTree(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 400)
 
-    def test_update_nonexistent_property(self):
+    def test_11_update_nonexistent_property(self):
         """Test trying to update a property that doesn't exist."""
         response = self.client.post("/component/MainController/TemperatureSensor/update-property/", json={
             "property_name": "nonexistent_property",
@@ -136,7 +147,7 @@ class TestComponentTree(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 404)
 
-    def test_update_all_component_attributes(self):
+    def test_12_update_all_component_attributes(self):
         """Test updating multiple attributes of a component in one call."""
         response = self.client.post("/component/MainController/TemperatureSensor/update-attributes/", json={
             "attributes": {
@@ -152,7 +163,7 @@ class TestComponentTree(unittest.TestCase):
         self.assertIn("TemperatureSensor", instance_registry)
         self.assertNotIn("NewTemperatureSensor", instance_registry)
 
-    def test_update_all_component_attributes_with_errors(self):
+    def test_13_update_all_component_attributes_with_errors(self):
         """Test updating multiple attributes with some errors."""
         response = self.client.post("/component/MainController/TemperatureSensor/update-attributes/", json={
             "attributes": {
@@ -171,19 +182,19 @@ class TestComponentTree(unittest.TestCase):
 def suite():
     """Define the test suite to order the tests."""
     suite = unittest.TestSuite()
-    suite.addTest(TestComponentTree("test_create_controller_component"))
-    suite.addTest(TestComponentTree("test_create_sensor_component"))
-    suite.addTest(TestComponentTree("test_create_actuator_component"))
-    suite.addTest(TestComponentTree("test_get_controller_hierarchy"))
-    suite.addTest(TestComponentTree("test_read_sensor_property"))
-    suite.addTest(TestComponentTree("test_read_actuator_property"))
-    suite.addTest(TestComponentTree("test_update_sensor_property"))
-    suite.addTest(TestComponentTree("test_update_actuator_property"))
-    suite.addTest(TestComponentTree("test_update_controller_property"))
-    suite.addTest(TestComponentTree("test_invalid_sensor_reading"))
-    suite.addTest(TestComponentTree("test_update_nonexistent_property"))
-    suite.addTest(TestComponentTree("test_update_all_component_attributes"))
-    suite.addTest(TestComponentTree("test_update_all_component_attributes_with_errors"))
+    suite.addTest(TestComponentTree("test_01_create_controller_component"))
+    suite.addTest(TestComponentTree("test_02_create_sensor_component"))
+    suite.addTest(TestComponentTree("test_03_create_actuator_component"))
+    suite.addTest(TestComponentTree("test_04_get_controller_hierarchy"))
+    suite.addTest(TestComponentTree("test_05_read_sensor_property"))
+    suite.addTest(TestComponentTree("test_06_read_actuator_property"))
+    suite.addTest(TestComponentTree("test_07_update_sensor_property"))
+    suite.addTest(TestComponentTree("test_08_update_actuator_property"))
+    suite.addTest(TestComponentTree("test_09_update_controller_property"))
+    suite.addTest(TestComponentTree("test_10_invalid_sensor_reading"))
+    suite.addTest(TestComponentTree("test_11_update_nonexistent_property"))
+    suite.addTest(TestComponentTree("test_12_update_all_component_attributes"))
+    suite.addTest(TestComponentTree("test_13_update_all_component_attributes_with_errors"))
     return suite
 
 

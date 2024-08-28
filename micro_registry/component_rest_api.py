@@ -1,5 +1,5 @@
 # component_rest_api.py
-
+import inspect
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Union, Any
@@ -162,12 +162,26 @@ class ComponentRestApi:
             attr_value = getattr(component, attr_name)
             attr_type = type(attr_value).__name__
 
+            if attr_type == 'method':
+                # Use inspect to get the method's signature (parameters)
+                signature = inspect.signature(attr_value)
+                parameters = {}
+                for param_name, param in signature.parameters.items():
+                    parameters[param_name] = str(param)
+
+                # Include the method's parameters in the attribute info
+                attr_value = f"{parameters}"
+            elif isinstance(attr_value, MicroComponent):
+                attr_value = attr_value.name  # Replace reference with name
+            elif isinstance(attr_value, list):
+                attr_value = [v.name if isinstance(v, MicroComponent) else v for v in attr_value]
+
             # Determine if the attribute is a property and if it has a setter
             is_property = isinstance(getattr(type(component), attr_name, None), property)
             has_setter = is_property and getattr(type(component), attr_name).fset is not None
 
             attributes_info[attr_name] = {
-                "value": attr_value if not isinstance(attr_value, MicroComponent) else attr_value.name,
+                "value": attr_value,
                 "type": attr_type,
                 "is_property": is_property,
                 "has_setter": has_setter

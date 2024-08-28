@@ -1,8 +1,7 @@
 from typing import Optional
-from micro_registry.registry import class_registry, instance_registry, register_class
+from micro_registry.registry import class_registry, instance_registry
 
 
-@register_class
 class MicroComponent:
     def __init__(self, name: str, parent: Optional['MicroComponent'] = None):
         self.name = name

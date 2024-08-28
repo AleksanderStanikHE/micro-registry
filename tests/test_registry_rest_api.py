@@ -4,7 +4,7 @@ sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 import unittest
 from fastapi.testclient import TestClient
-from micro_registry.registry_rest_api import RestApi  # Ensure this import matches the actual location of your RestApi class
+from micro_registry.registry_rest_api import RegistryRestApi  # Ensure this import matches the actual location of your RestApi class
 from micro_registry.component import MicroComponent  # Importing MicroComponent from component.py
 from micro_registry.registry import instance_registry, class_registry, register_class
 
@@ -13,8 +13,11 @@ class TestRestApi(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # Cleanup the registry after tests
+        instance_registry.clear()
+        class_registry.clear()
         # Initialize the RestApi component and start the app
-        cls.api_component = RestApi(name="TestAPI", host="127.0.0.1", port=8001)
+        cls.api_component = RegistryRestApi(name="TestAPI", host="127.0.0.1", port=8001)
         instance_registry["TestAPI"] = cls.api_component
         cls.client = TestClient(cls.api_component.app)
 
@@ -177,9 +180,20 @@ class TestRestApi(unittest.TestCase):
         self.assertIn("TestComponent", response.json()["class_names"])
 
     def test_filter_instances_by_base_class(self):
+
+        self.client.post("/create-instance/", json={
+            "class_name": "TestComponent",
+            "instance_name": "attribute_instance_new",
+            "parameters": {"name": "AttributeInstance", "value": 99}
+        })
+
+        response = self.client.get("/instance/attribute_instance_new/attributes/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["attributes"]["value"], 99)
+
         response = self.client.get("/filter-instances-by-base-class/", params={"base_class_name": "MicroComponent"})
         self.assertEqual(response.status_code, 200)
-        self.assertIn("attribute_instance", response.json()["instances"])
+        self.assertIn("attribute_instance_new", response.json()["instances"])
 
 
 if __name__ == "__main__":

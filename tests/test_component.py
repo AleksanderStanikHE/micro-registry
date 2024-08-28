@@ -5,9 +5,21 @@ sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 import unittest
 from unittest.mock import patch
 from micro_registry.component import MicroComponent  # Importing MicroComponent from component.py
+from micro_registry.registry import class_registry, instance_registry
 
 
 class TestMicroComponent(unittest.TestCase):
+    @classmethod
+    def setUp(self):
+        # Reset the registries before each test
+        class_registry.clear()
+        instance_registry.clear()
+
+    @classmethod
+    def tearDownClass(cls):
+        # Cleanup the registry after tests
+        instance_registry.clear()
+        class_registry.clear()
 
     def test_initialization(self):
         """Test that a MicroComponent is initialized correctly."""
