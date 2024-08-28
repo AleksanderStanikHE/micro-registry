@@ -176,11 +176,18 @@ class TestComponentRestApi(unittest.TestCase):
         # Extract the actual information from the response
         actual_info = response.json()
 
-        # Ensure that the expected structure is part of the actual response
-        for key, value in expected_all_info.items():
-            self.assertIn(key, actual_info)
-            if isinstance(value, dict):
-                self.assertDictContainsSubset(value, actual_info[key])
+        # Function to recursively check if one dictionary is a subset of another
+        def dict_contains_subset(subset, dictionary):
+            for key, value in subset.items():
+                self.assertIn(key, dictionary)
+                if isinstance(value, dict):
+                    self.assertIsInstance(dictionary[key], dict)
+                    dict_contains_subset(value, dictionary[key])
+                else:
+                    self.assertEqual(dictionary[key], value)
+
+        # Use the function to check the expected structure
+        dict_contains_subset(expected_all_info['attributes'], actual_info['attributes'])
 
     def test_07_prepare_component(self):
         """Test preparing a child component and its children."""
