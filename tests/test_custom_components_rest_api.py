@@ -15,15 +15,17 @@ class TestComponentTree(unittest.TestCase):
         # Cleanup the registry after tests
         instance_registry.clear()
         class_registry.clear()
+        from micro_registry.registry_rest_api import RegistryRestApi
         from micro_registry.component_rest_api import ComponentRestApi
         from custom_components import SensorComponent, ActuatorComponent, ControllerComponent
 
         register_class(SensorComponent)
         register_class(ActuatorComponent)
         register_class(ControllerComponent)
-
-        cls.api = ComponentRestApi()
+        cls.registry_server = RegistryRestApi("Server", parent=None)
+        cls.api = ComponentRestApi(name="ComponentRestApiExtension", parent=cls.registry_server)
         cls.client = TestClient(cls.api.app)
+        cls.prefix = cls.api.prefix
 
     @classmethod
     def tearDownClass(cls):
@@ -33,7 +35,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_01_create_controller_component(self):
         """Test creating the controller component."""
-        response = self.client.post("/create-component/", json={
+        response = self.client.post(self.prefix + "/create-component/", json={
             "class_name": "ControllerComponent",
             "instance_name": "MainController",
             "parameters": {"name": "MainController", "setpoint": 100.0}
@@ -43,7 +45,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_02_create_sensor_component(self):
         """Test creating the sensor component as a child of the controller."""
-        response = self.client.post("/create-component/", json={
+        response = self.client.post(self.prefix + "/create-component/", json={
             "class_name": "SensorComponent",
             "instance_name": "TemperatureSensor",
             "parent_path": "MainController",
@@ -54,7 +56,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_03_create_actuator_component(self):
         """Test creating the actuator component as a child of the controller."""
-        response = self.client.post("/create-component/", json={
+        response = self.client.post(self.prefix + "/create-component/", json={
             "class_name": "ActuatorComponent",
             "instance_name": "CoolingFan",
             "parent_path": "MainController",
@@ -65,7 +67,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_04_get_controller_hierarchy(self):
         """Test retrieving the hierarchy of the controller component."""
-        response = self.client.get("/component/MainController/hierarchy/")
+        response = self.client.get(self.prefix + "/component/MainController/hierarchy/")
         self.assertEqual(response.status_code, 200)
         expected_hierarchy = {
             "name": "MainController",
@@ -84,7 +86,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_05_read_sensor_property(self):
         """Test reading the 'reading' property of the sensor component."""
-        response = self.client.get("/component/MainController/TemperatureSensor/attributes/")
+        response = self.client.get(self.prefix + "/component/MainController/TemperatureSensor/attributes/")
         self.assertEqual(response.status_code, 200)
         attributes = response.json()["attributes"]
         self.assertIn("reading", attributes)
@@ -95,7 +97,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_06_read_actuator_property(self):
         """Test reading the 'state' property of the actuator component."""
-        response = self.client.get("/component/MainController/CoolingFan/attributes/")
+        response = self.client.get(self.prefix + "/component/MainController/CoolingFan/attributes/")
         self.assertEqual(response.status_code, 200)
         attributes = response.json()["attributes"]
         self.assertIn("state", attributes)
@@ -106,7 +108,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_07_update_sensor_property(self):
         """Test updating the 'reading' property of the sensor component."""
-        response = self.client.post("/component/MainController/TemperatureSensor/update-property/", json={
+        response = self.client.post(self.prefix + "/component/MainController/TemperatureSensor/update-property/", json={
             "property_name": "reading",
             "value": 30.0
         })
@@ -115,7 +117,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_08_update_actuator_property(self):
         """Test updating the 'state' property of the actuator component."""
-        response = self.client.post("/component/MainController/CoolingFan/update-property/", json={
+        response = self.client.post(self.prefix + "/component/MainController/CoolingFan/update-property/", json={
             "property_name": "state",
             "value": True
         })
@@ -124,7 +126,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_09_update_controller_property(self):
         """Test updating the 'setpoint' property of the controller component."""
-        response = self.client.post("/component/MainController/update-property/", json={
+        response = self.client.post(self.prefix + "/component/MainController/update-property/", json={
             "property_name": "setpoint",
             "value": 80.0
         })
@@ -133,7 +135,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_10_invalid_sensor_reading(self):
         """Test that setting an invalid 'reading' value on the sensor raises an error."""
-        response = self.client.post("/component/MainController/TemperatureSensor/update-property/", json={
+        response = self.client.post(self.prefix + "/component/MainController/TemperatureSensor/update-property/", json={
             "property_name": "reading",
             "value": -10.0
         })
@@ -141,7 +143,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_11_update_nonexistent_property(self):
         """Test trying to update a property that doesn't exist."""
-        response = self.client.post("/component/MainController/TemperatureSensor/update-property/", json={
+        response = self.client.post(self.prefix + "/component/MainController/TemperatureSensor/update-property/", json={
             "property_name": "nonexistent_property",
             "value": 100
         })
@@ -149,7 +151,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_12_update_all_component_attributes(self):
         """Test updating multiple attributes of a component in one call."""
-        response = self.client.post("/component/MainController/TemperatureSensor/update-attributes/", json={
+        response = self.client.post(self.prefix + "/component/MainController/TemperatureSensor/update-attributes/", json={
             "attributes": {
                 "reading": 28.5,
                 # "name": "NewTemperatureSensor"
@@ -165,7 +167,7 @@ class TestComponentTree(unittest.TestCase):
 
     def test_13_update_all_component_attributes_with_errors(self):
         """Test updating multiple attributes with some errors."""
-        response = self.client.post("/component/MainController/TemperatureSensor/update-attributes/", json={
+        response = self.client.post(self.prefix + "/component/MainController/TemperatureSensor/update-attributes/", json={
             "attributes": {
                 "reading": -10.0,  # Invalid value, should raise an error
                 # "name": "AnotherTemperatureSensor"

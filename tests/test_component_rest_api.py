@@ -17,10 +17,16 @@ class TestComponentRestApi(unittest.TestCase):
         instance_registry.clear()
         class_registry.clear()
         register_class(MicroComponent)
+        from micro_registry.registry_rest_api import RegistryRestApi
         from micro_registry.component_rest_api import ComponentRestApi
         """Set up the ComponentRestApi and TestClient once for all tests."""
-        cls.api = ComponentRestApi()
+        # cls.api = ComponentRestApi()
+        # cls.client = TestClient(cls.api.app)
+
+        cls.registry_server = RegistryRestApi("Server", parent=None)
+        cls.api = ComponentRestApi(name="ComponentRestApiExtension", parent=cls.registry_server)
         cls.client = TestClient(cls.api.app)
+        cls.prefix = cls.api.prefix
 
     @classmethod
     def tearDownClass(cls):
@@ -30,7 +36,7 @@ class TestComponentRestApi(unittest.TestCase):
 
     def test_01_create_root_component(self):
         """Test creating the root component."""
-        response = self.client.post("/create-component/", json={
+        response = self.client.post(self.prefix + "/create-component/", json={
             "class_name": "MicroComponent",
             "instance_name": "RootComponent",
             "parameters": {"name": "RootComponent"}
@@ -41,7 +47,7 @@ class TestComponentRestApi(unittest.TestCase):
 
     def test_02_create_child_component(self):
         """Test creating a child component."""
-        response = self.client.post("/create-component/", json={
+        response = self.client.post(self.prefix + "/create-component/", json={
             "class_name": "MicroComponent",
             "instance_name": "ChildComponent1",
             "parent_path": "RootComponent",
@@ -53,7 +59,7 @@ class TestComponentRestApi(unittest.TestCase):
 
     def test_03_create_grandchild_component(self):
         """Test creating a grandchild component."""
-        response = self.client.post("/create-component/", json={
+        response = self.client.post(self.prefix + "/create-component/", json={
             "class_name": "MicroComponent",
             "instance_name": "GrandChildComponent",
             "parent_path": "RootComponent/ChildComponent1",
@@ -65,7 +71,7 @@ class TestComponentRestApi(unittest.TestCase):
 
     def test_04_get_component_hierarchy(self):
         """Test retrieving the hierarchy of the root component."""
-        response = self.client.get("/component/RootComponent/hierarchy/")
+        response = self.client.get(self.prefix + "/component/RootComponent/hierarchy/")
         self.assertEqual(response.status_code, 200)
         expected_hierarchy = {
             "name": "RootComponent",
@@ -85,7 +91,7 @@ class TestComponentRestApi(unittest.TestCase):
 
     def test_05_get_component_attributes(self):
         """Test retrieving the attributes of a child component."""
-        response = self.client.get("/component/RootComponent/ChildComponent1/attributes/")
+        response = self.client.get(self.prefix + "/component/RootComponent/ChildComponent1/attributes/")
         self.assertEqual(response.status_code, 200)
 
         # Expected structure based on the modified attributes retrieval
@@ -93,20 +99,14 @@ class TestComponentRestApi(unittest.TestCase):
             "name": {
                 "value": "ChildComponent1",
                 "type": "str",
-                "is_property": False,
-                "has_setter": False,
             },
             "parent": {
-                "value": "RootComponent",
+                "component_name": "RootComponent",
                 "type": "MicroComponent",
-                "is_property": False,
-                "has_setter": False,
             },
             "children": {
-                "value": ["GrandChildComponent"],
+                "items": [{"type": "MicroComponent", "component_name": "GrandChildComponent"}],
                 "type": "list",
-                "is_property": False,
-                "has_setter": False,
             }
         }
 
@@ -120,7 +120,7 @@ class TestComponentRestApi(unittest.TestCase):
 
     def test_06_get_all_component_information(self):
         """Test retrieving all information of a child component and its descendants."""
-        response = self.client.get("/component/RootComponent/ChildComponent1/all/")
+        response = self.client.get(self.prefix + "/component/RootComponent/ChildComponent1/all/")
         self.assertEqual(response.status_code, 200)
 
         expected_all_info = {
@@ -129,20 +129,14 @@ class TestComponentRestApi(unittest.TestCase):
                 "name": {
                     "value": "ChildComponent1",
                     "type": "str",
-                    "is_property": False,
-                    "has_setter": False
                 },
                 "parent": {
-                    "value": "RootComponent",  # Parent should be the name of the parent component
+                    "component_name": "RootComponent",  # Parent should be the name of the parent component
                     "type": "MicroComponent",  # Assuming type here should be a string
-                    "is_property": False,
-                    "has_setter": False
                 },
                 "children": {
-                    "value": ["GrandChildComponent"],
+                    "items": [{"type": "MicroComponent", "component_name": "GrandChildComponent"}],
                     "type": "list",
-                    "is_property": False,
-                    "has_setter": False
                 }
             },
             "children": [
@@ -152,21 +146,15 @@ class TestComponentRestApi(unittest.TestCase):
                         "name": {
                             "value": "GrandChildComponent",
                             "type": "str",
-                            "is_property": False,
-                            "has_setter": False
                         },
                         "parent": {
-                            "value": "ChildComponent1",  # Parent should be the name of the parent component
+                            "component_name": "ChildComponent1",  # Parent should be the name of the parent component
                             "type": "MicroComponent",  # Assuming type here should be a string
-                            "is_property": False,
-                            "has_setter": False
                         },
                         "children": {
-                            "value": [],
                             "type": "list",
-                            "is_property": False,
-                            "has_setter": False
-                        }
+                            "items": []
+                        },
                     },
                     "children": []
                 }
@@ -192,7 +180,7 @@ class TestComponentRestApi(unittest.TestCase):
     def test_07_prepare_component(self):
         """Test preparing a child component and its children."""
         with patch('builtins.print') as mocked_print:
-            response = self.client.post("/component/RootComponent/ChildComponent1/prepare/")
+            response = self.client.post(self.prefix + "/component/RootComponent/ChildComponent1/prepare/")
             self.assertEqual(response.status_code, 200)
             mocked_print.assert_any_call("Preparing ChildComponent1")
             mocked_print.assert_any_call("Preparing GrandChildComponent")
@@ -200,7 +188,7 @@ class TestComponentRestApi(unittest.TestCase):
     def test_08_start_component(self):
         """Test starting the root component and its children."""
         with patch('builtins.print') as mocked_print:
-            response = self.client.post("/component/RootComponent/start/")
+            response = self.client.post(self.prefix + "/component/RootComponent/start/")
             self.assertEqual(response.status_code, 200)
             mocked_print.assert_any_call("Starting RootComponent")
             mocked_print.assert_any_call("Starting ChildComponent1")
@@ -209,7 +197,7 @@ class TestComponentRestApi(unittest.TestCase):
     def test_09_pause_component(self):
         """Test pausing the root component and its children."""
         with patch('builtins.print') as mocked_print:
-            response = self.client.post("/component/RootComponent/pause/")
+            response = self.client.post(self.prefix + "/component/RootComponent/pause/")
             self.assertEqual(response.status_code, 200)
             mocked_print.assert_any_call("Pausing RootComponent")
             mocked_print.assert_any_call("Pausing ChildComponent1")
@@ -218,7 +206,7 @@ class TestComponentRestApi(unittest.TestCase):
     def test_10_stop_component(self):
         """Test stopping the root component and its children."""
         with patch('builtins.print') as mocked_print:
-            response = self.client.post("/component/RootComponent/stop/")
+            response = self.client.post(self.prefix + "/component/RootComponent/stop/")
             self.assertEqual(response.status_code, 200)
             mocked_print.assert_any_call("Stopping RootComponent")
             mocked_print.assert_any_call("Stopping ChildComponent1")
@@ -226,7 +214,7 @@ class TestComponentRestApi(unittest.TestCase):
 
     def test_11_create_component_non_existent_parent(self):
         """Test creating a component with a non-existent parent."""
-        response = self.client.post("/create-component/", json={
+        response = self.client.post(self.prefix + "/create-component/", json={
             "class_name": "MicroComponent",
             "instance_name": "OrphanComponent",
             "parent_path": "NonExistentComponent",

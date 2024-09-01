@@ -1,10 +1,8 @@
-# component_rest_api.py
-import inspect
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Union, Any
 from micro_registry.component import MicroComponent, create_component
-from micro_registry.registry import instance_registry
+from micro_registry.registry import instance_registry, register_class
 
 
 class CreateComponentModel(BaseModel):
@@ -23,37 +21,52 @@ class UpdateAttributesModel(BaseModel):
     attributes: Dict[str, Union[int, float, bool, str]]
 
 
-class ComponentRestApi:
-    def __init__(self):
-        self.app = FastAPI()
+@register_class
+class ComponentRestApi(MicroComponent):
+    def __init__(self, name: str, parent=None):
+        super().__init__(name, parent)
+        self._get_instance_attributes = parent._get_instance_attributes
+        self.prefix = parent.prefix
+        self.app = parent.app
 
-        @self.app.get("/component/{path:path}/hierarchy/")
+        @self.app.get(self.prefix + "/component/{path:path}/hierarchy/")
         def get_component_hierarchy(path: str):
             component = self._get_component_by_path(path)
             if not component:
                 raise HTTPException(status_code=404, detail="Component not found")
             return component.get_hierarchy()
 
-        @self.app.get("/components/")
+        @self.app.get(self.prefix + "/components/")
         def get_all_components():
             components = list(instance_registry.keys())
             return {"components": components}
 
-        @self.app.get("/component/{path:path}/attributes/")
+        @self.app.get(self.prefix + "/component/{path:path}/attributes/")
         def get_component_attributes(path: str):
             component = self._get_component_by_path(path)
             if not component:
                 raise HTTPException(status_code=404, detail="Component not found")
-            return {"attributes": self._get_instance_attributes(component)}
+            return {"attributes": self._get_instance_attributes(component, filter_types=["properties", "attributes"])}
 
-        @self.app.get("/component/{path:path}/all/")
+        @self.app.get(self.prefix + "/component/{path:path}/properties/")
+        def get_component_properties(path: str):
+            component = self._get_component_by_path(path)
+            if not component:
+                raise HTTPException(status_code=404, detail="Component not found")
+            return {"properties": self._get_instance_attributes(component, filter_types=["properties"])}
+
+        @self.app.get(self.prefix + "/component/{path:path}")
+        @self.app.get(self.prefix + "/component/{path:path}/")
+        @self.app.get(self.prefix + "/component/{path:path}/all/")
         def get_all_component_information(path: str):
             component = self._get_component_by_path(path)
             if not component:
                 raise HTTPException(status_code=404, detail="Component not found")
-            return self._get_component_and_children_attributes(component)
+            result = self._get_component_and_children_attributes(component)
+            # print(result)
+            return result
 
-        @self.app.post("/create-component/")
+        @self.app.post(self.prefix + "/create-component/")
         def create_component_api(data: CreateComponentModel):
             try:
                 parent_instance_name = self._get_component_by_path(data.parent_path).name if data.parent_path else None
@@ -62,7 +75,7 @@ class ComponentRestApi:
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
 
-        @self.app.post("/component/{path:path}/prepare/")
+        @self.app.post(self.prefix + "/component/{path:path}/prepare/")
         def prepare_component(path: str):
             component = self._get_component_by_path(path)
             if not component:
@@ -70,7 +83,7 @@ class ComponentRestApi:
             component.prepare()
             return {"message": f"Component '{component.name}' and its children prepared successfully"}
 
-        @self.app.post("/component/{path:path}/start/")
+        @self.app.post(self.prefix + "/component/{path:path}/start/")
         def start_component(path: str):
             component = self._get_component_by_path(path)
             if not component:
@@ -78,7 +91,7 @@ class ComponentRestApi:
             component.start()
             return {"message": f"Component '{component.name}' and its children started successfully"}
 
-        @self.app.post("/component/{path:path}/pause/")
+        @self.app.post(self.prefix + "/component/{path:path}/pause/")
         def pause_component(path: str):
             component = self._get_component_by_path(path)
             if not component:
@@ -86,7 +99,7 @@ class ComponentRestApi:
             component.pause()
             return {"message": f"Component '{component.name}' and its children paused successfully"}
 
-        @self.app.post("/component/{path:path}/stop/")
+        @self.app.post(self.prefix + "/component/{path:path}/stop/")
         def stop_component(path: str):
             component = self._get_component_by_path(path)
             if not component:
@@ -94,7 +107,7 @@ class ComponentRestApi:
             component.stop()
             return {"message": f"Component '{component.name}' and its children stopped successfully"}
 
-        @self.app.post("/component/{path:path}/update-property/")
+        @self.app.post(self.prefix + "/component/{path:path}/update-property/")
         def update_component_property(path: str, update: UpdatePropertyModel):
             component = self._get_component_by_path(path)
             if not component:
@@ -111,7 +124,7 @@ class ComponentRestApi:
             else:
                 raise HTTPException(status_code=404, detail="Property not found")
 
-        @self.app.post("/component/{path:path}/update-attributes/")
+        @self.app.post(self.prefix + "/component/{path:path}/update-attributes/")
         def update_component_attributes(path: str, update: UpdateAttributesModel):
             component = self._get_component_by_path(path)
             if not component:
@@ -149,45 +162,6 @@ class ComponentRestApi:
                 return None
 
         return component
-
-    def _get_instance_attributes(self, component: MicroComponent) -> Dict[str, Any]:
-        """Return detailed information about the attributes and properties of a component."""
-        attributes_info = {}
-
-        for attr_name in dir(component):
-            # Exclude private attributes and methods
-            if attr_name.startswith('_'):
-                continue
-
-            attr_value = getattr(component, attr_name)
-            attr_type = type(attr_value).__name__
-
-            if attr_type == 'method':
-                # Use inspect to get the method's signature (parameters)
-                signature = inspect.signature(attr_value)
-                parameters = {}
-                for param_name, param in signature.parameters.items():
-                    parameters[param_name] = str(param)
-
-                # Include the method's parameters in the attribute info
-                attr_value = f"{parameters}"
-            elif isinstance(attr_value, MicroComponent):
-                attr_value = attr_value.name  # Replace reference with name
-            elif isinstance(attr_value, list):
-                attr_value = [v.name if isinstance(v, MicroComponent) else v for v in attr_value]
-
-            # Determine if the attribute is a property and if it has a setter
-            is_property = isinstance(getattr(type(component), attr_name, None), property)
-            has_setter = is_property and getattr(type(component), attr_name).fset is not None
-
-            attributes_info[attr_name] = {
-                "value": attr_value,
-                "type": attr_type,
-                "is_property": is_property,
-                "has_setter": has_setter
-            }
-
-        return attributes_info
 
     def _get_component_and_children_attributes(self, component: MicroComponent) -> Dict[str, Any]:
         """Recursively gather attributes of a component and all its descendants, returning instance names instead of references."""
