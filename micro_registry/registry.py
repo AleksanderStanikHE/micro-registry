@@ -58,13 +58,6 @@ def get_class_names_by_base(base_class_name: str):
 def load_instances_from_yaml(filename: str):
     with open(filename, 'r') as file:
         load_instances_from_yaml_data(file)
-        # data = yaml.safe_load(file)
-
-        # for instance_name, instance_info in data.items():
-        #     class_name = instance_info['class']
-        #     parameters = instance_info.get('parameters', {})
-        #     instance = create_instance(class_name, **parameters)
-        #     instance_registry[instance_name] = instance
 
 
 def load_instances_from_yaml_data(yaml_data: str):

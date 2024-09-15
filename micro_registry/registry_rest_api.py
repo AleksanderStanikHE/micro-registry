@@ -1,4 +1,4 @@
-import uvicorn
+from uvicorn import Config, Server
 import inspect
 import json
 from fastapi import FastAPI, HTTPException
@@ -68,12 +68,14 @@ def safe_stringify(value):
 class RegistryRestApi(MicroComponent):
     def __init__(self, name: str, parent=None, host="0.0.0.0", port=8000):
         super().__init__(name, parent)
+        # Initialize FastAPI application
         self.app = FastAPI()
         self.host = host
         self.port = port
         self.version = "v1"
         self.prefix = f"/api/{self.version}"
 
+        # Define API endpoints
         @self.app.get(self.prefix)
         @self.app.get(self.prefix + "/")
         def get_api_root():
@@ -326,8 +328,14 @@ class RegistryRestApi(MicroComponent):
         return attributes_info
 
     def start(self):
-        def run():
-            uvicorn.run(self.app, host=self.host, port=self.port)
+        # Use Uvicorn's Server class to start the server
+        config = Config(app=self.app, host=self.host, port=self.port, log_level="info")
+        self.server = Server(config)
+        self.server_thread = Thread(target=self.server.run)
+        self.server_thread.start()
 
-        thread = Thread(target=run)
-        thread.start()
+    def stop(self):
+        # Stop the Uvicorn server
+        if hasattr(self, 'server'):
+            self.server.should_exit = True
+            self.server_thread.join()

@@ -23,11 +23,11 @@ class UpdateAttributesModel(BaseModel):
 
 @register_class
 class ComponentRestApi(MicroComponent):
-    def __init__(self, name: str, parent=None):
+    def __init__(self, name: str, parent):
         super().__init__(name, parent)
         self._get_instance_attributes = parent._get_instance_attributes
-        self.prefix = parent.prefix
         self.app = parent.app
+        self.prefix = parent.prefix
 
         @self.app.get(self.prefix + "/component/{path:path}/hierarchy/")
         def get_component_hierarchy(path: str):
@@ -154,11 +154,14 @@ class ComponentRestApi(MicroComponent):
             return None
 
         path_parts = path.split('/')
-        component = instance_registry.get(path_parts[0])
+        root_name = path_parts[0]
+        component = instance_registry.get(root_name)
+        if not component:
+            return None
+
         for part in path_parts[1:]:
-            if component:
-                component = next((child for child in component.get_children() if child.name == part), None)
-            else:
+            component = next((child for child in component.get_children() if child.name == part), None)
+            if not component:
                 return None
 
         return component
