@@ -6,6 +6,7 @@ components:
     parameters:
       host: "0.0.0.0"
       port: 8000
+      start_server: False  # Do not start Uvicorn server during tests      
     children:
       - name: component_api
         class: ComponentRestApi

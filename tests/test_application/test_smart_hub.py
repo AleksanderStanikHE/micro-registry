@@ -9,6 +9,7 @@ import time
 from micro_registry.component_loader import load_components_and_start_system
 from micro_registry.registry import instance_registry, load_modules_from_directory
 from fastapi.testclient import TestClient
+import threading
 
 
 class TestSmartHubApplication(unittest.TestCase):
@@ -33,15 +34,18 @@ class TestSmartHubApplication(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # Stop the API server
-        if hasattr(cls, 'registry_api'):
-            cls.registry_api.stop()
-            time.sleep(1)  # Give the server time to shut down
+        # Close the TestClient
+        if hasattr(cls, 'client'):
+            cls.client.close()
 
         # Stop the scheduler
         scheduler = instance_registry.get('scheduler_main')
         if scheduler:
             scheduler.stop()
+
+        # Ensure all threads are terminated
+        for thread in threading.enumerate():
+            print(f"Thread {thread.name}: Daemon={thread.daemon}, Alive={thread.is_alive()}")
 
     def test_01_components_loaded(self):
         # Test that all components are loaded

@@ -66,7 +66,7 @@ def safe_stringify(value):
 
 @register_class
 class RegistryRestApi(MicroComponent):
-    def __init__(self, name: str, parent=None, host="0.0.0.0", port=8000):
+    def __init__(self, name: str, parent=None, host="0.0.0.0", port=8000, start_server=True):
         super().__init__(name, parent)
         # Initialize FastAPI application
         self.app = FastAPI()
@@ -74,6 +74,7 @@ class RegistryRestApi(MicroComponent):
         self.port = port
         self.version = "v1"
         self.prefix = f"/api/{self.version}"
+        self.start_server = start_server  # Control whether to start Uvicorn
 
         # Define API endpoints
         @self.app.get(self.prefix)
@@ -328,11 +329,14 @@ class RegistryRestApi(MicroComponent):
         return attributes_info
 
     def start(self):
-        # Use Uvicorn's Server class to start the server
-        config = Config(app=self.app, host=self.host, port=self.port, log_level="info")
-        self.server = Server(config)
-        self.server_thread = Thread(target=self.server.run)
-        self.server_thread.start()
+        if self.start_server:
+            # Use Uvicorn's Server class to start the server
+            config = Config(app=self.app, host=self.host, port=self.port, log_level="info")
+            self.server = Server(config)
+            self.server_thread = Thread(target=self.server.run)
+            self.server_thread.start()
+        else:
+            print("RegistryRestApi server not started (start_server=False)")
 
     def stop(self):
         # Stop the Uvicorn server
