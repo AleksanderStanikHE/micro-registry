@@ -24,10 +24,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2  # Check out the repository
+      uses: actions/checkout@v4  # Updated to version v4
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4  # Updated to version v4
       with:
         python-version: ${{ matrix.python-version }}  # Set up the specified Python version
 
@@ -54,10 +54,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2  # Check out the repository
+        uses: actions/checkout@v4  # Updated to version v4
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4  # Updated to version v4
         with:
           python-version: ${{ matrix.python-version }}  # Set up the specified Python version
 
@@ -81,7 +81,7 @@ jobs:
           python -c "from micro_registry.registry import register_class; print('micro_registry installation and import successful')"  # Verify installation and a function import                    
 
       - name: Archive build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3  # Updated to version v3
         with:
           name: build-artifacts
           path: dist/*
@@ -93,10 +93,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4  # Updated to version v4
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4  # Updated to version v4
         with:
           python-version: '3.x'
 
