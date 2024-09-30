@@ -8,6 +8,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'pyyaml',
+        'fastapi',
+        'uvicorn',
     ],
     author="Aleksander Stanik (Olek)",
     author_email="aleksander.stanik@hammerheadsengineers.com",
