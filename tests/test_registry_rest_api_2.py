@@ -10,6 +10,18 @@ from micro_registry.registry_rest_api import RegistryRestApi
 from micro_registry.registry import instance_registry
 
 
+def is_subset(subset, superset):
+    for key, value in subset.items():
+        if key not in superset:
+            return False
+        if isinstance(value, dict) and isinstance(superset[key], dict):
+            if not is_subset(value, superset[key]):
+                return False
+        elif value != superset[key]:
+            return False
+    return True
+
+
 class TestRegistryRestApi(unittest.TestCase):
     def setUp(self):
         # Initialize the RegistryRestApi and TestClient
@@ -64,7 +76,8 @@ class TestRegistryRestApi(unittest.TestCase):
                 }
             }
         }
-        self.assertDictEqual(response.json(), expected_attributes)
+
+        self.assertTrue(is_subset(expected_attributes, response.json()), "expected is not contained within response")
 
     def test_update_instance_attributes(self):
         # Test updating attributes of the test component with the correct payload structure

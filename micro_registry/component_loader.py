@@ -1,4 +1,14 @@
-# component_loader.py
+#
+# MIT License
+#
+# Copyright (c) 2024 Aleksander(Olek) Stanik
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction.
+#
+# See the LICENSE file for full license details.
+
 import yaml
 from micro_registry.registry import class_registry, instance_registry
 from micro_registry.component import MicroComponent

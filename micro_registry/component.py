@@ -1,3 +1,15 @@
+#
+# MIT License
+#
+# Copyright (c) 2024 Aleksander(Olek) Stanik
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction.
+#
+# See the LICENSE file for full license details.
+
+import logging
 from typing import Optional
 from micro_registry.registry import class_registry, instance_registry
 
@@ -7,6 +19,7 @@ class MicroComponent:
         self.name = name
         self.parent = parent
         self.children = []
+        self.logger = logging.getLogger(f'{__name__}.{self.__class__.__name__}.{self.name}')
         if parent:
             parent.add_child(self)
 
