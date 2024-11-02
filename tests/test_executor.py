@@ -11,6 +11,7 @@
 # See the LICENSE file for full license details.
 
 import unittest
+import asynctest
 import asyncio
 import threading
 import time
@@ -29,9 +30,7 @@ from unittest.mock import MagicMock
 
 if sys.version_info < (3, 8):
     # Define a custom AsyncMock for Python 3.7
-    class AsyncMock(MagicMock):
-        async def __call__(self, *args, **kwargs):
-            return super(AsyncMock, self).__call__(*args, **kwargs)
+    AsyncMock = asynctest.CoroutineMock
 else:
     # For Python 3.8+ just import AsyncMock
     from unittest.mock import AsyncMock
@@ -103,7 +102,7 @@ class TestExecutor(unittest.TestCase):
         executor.children.append(child)
 
         executor.start()
-        time.sleep(0.5)
+        time.sleep(1.0)
         executor.stop()
 
         # The child's run method should be called multiple times
