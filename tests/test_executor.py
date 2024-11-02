@@ -11,7 +11,6 @@
 # See the LICENSE file for full license details.
 
 import unittest
-import asynctest
 import asyncio
 import threading
 import time
@@ -27,13 +26,6 @@ from micro_registry.component import MicroComponent
 from micro_registry.executor import Executor  # Adjust this import based on your project structure
 
 from unittest.mock import MagicMock
-
-if sys.version_info < (3, 8):
-    # Define a custom AsyncMock for Python 3.7
-    AsyncMock = asynctest.CoroutineMock
-else:
-    # For Python 3.8+ just import AsyncMock
-    from unittest.mock import AsyncMock
 
 
 class TestExecutor(unittest.TestCase):
@@ -91,22 +83,24 @@ class TestExecutor(unittest.TestCase):
         self.assertGreaterEqual(child.run.call_count, 4)
 
     def test_executor_runs_asynchronous_child_run_methods(self):
-        """Test that the Executor runs asynchronous child components' run methods."""
-        # Mock child component with an asynchronous run method
-        child = MagicMock(spec=MicroComponent)
-        child.run = AsyncMock()
-        child.execution_interval = 0.1
+        if sys.version_info >= (3, 8):
+            from unittest.mock import AsyncMock
+            """Test that the Executor runs asynchronous child components' run methods."""
+            # Mock child component with an asynchronous run method
+            child = MagicMock(spec=MicroComponent)
+            child.run = AsyncMock()
+            child.execution_interval = 0.1
 
-        executor = Executor(name='test_executor')
-        self.executors.append(executor)
-        executor.children.append(child)
+            executor = Executor(name='test_executor')
+            self.executors.append(executor)
+            executor.children.append(child)
 
-        executor.start()
-        time.sleep(1.0)
-        executor.stop()
+            executor.start()
+            time.sleep(1.0)
+            executor.stop()
 
-        # The child's run method should be called multiple times
-        self.assertGreaterEqual(child.run.call_count, 4)
+            # The child's run method should be called multiple times
+            self.assertGreaterEqual(child.run.call_count, 4)
 
     def test_executor_uses_default_interval(self):
         """Test that the Executor uses the default interval when no execution_interval is set."""
