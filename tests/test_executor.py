@@ -17,7 +17,6 @@ import time
 import sys
 import os
 import logging
-from unittest.mock import MagicMock, AsyncMock
 from concurrent.futures import ThreadPoolExecutor
 
 # Add the parent directory to sys.path to import the micro_registry module
@@ -25,6 +24,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from micro_registry.component import MicroComponent
 from micro_registry.executor import Executor  # Adjust this import based on your project structure
+
+from unittest.mock import MagicMock
+
+if sys.version_info < (3, 8):
+    # Define a custom AsyncMock for Python 3.7
+    class AsyncMock(MagicMock):
+        async def __call__(self, *args, **kwargs):
+            return super(AsyncMock, self).__call__(*args, **kwargs)
+else:
+    # For Python 3.8+ just import AsyncMock
+    from unittest.mock import AsyncMock
 
 
 class TestExecutor(unittest.TestCase):
