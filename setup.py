@@ -11,6 +11,11 @@ setup(
         'fastapi',
         'uvicorn',
     ],
+    entry_points={
+        'console_scripts': [
+            'micro-app=micro_registry.micro_app:main',
+        ],
+    },
     author="Aleksander Stanik (Olek)",
     author_email="aleksander.stanik@hammerheadsengineers.com",
     description="A Python library for managing and loading class instances from modules and YAML configurations.",
