@@ -9,7 +9,7 @@
 #
 # See the LICENSE file for full license details.
 
-__version__ = "0.2.6"
+__version__ = "0.4.1"
 
 
 def init():
