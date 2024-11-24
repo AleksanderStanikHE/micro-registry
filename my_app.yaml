@@ -1,0 +1,192 @@
+components:
+  - name: registry_api
+    class: micro_registry.registry_api.RegistryRestApi
+    parameters:
+      host: "127.0.0.1"
+      port: 8001
+      start_server: True
+    children:
+      - name: component_api
+        class: micro_registry.component_api.ComponentRestApi
+
+  - name: executor
+    class: micro_registry.executor.Executor
+    parameters:
+      default_interval: 1  # Default interval for child components in seconds
+    children:
+      - name: scheduler_main
+        class: micro_smart_hub.scheduler.MicroScheduler
+        parameters:
+          schedule_file: './micro_smart_server/schedule.yaml'
+        children:
+          - name: Switch_1
+            class: micro_smart_hub.devices.switchbox.MicroSwitch
+
+          - name: Switch_2
+            class: micro_smart_hub.devices.switchbox.MicroSwitch
+
+          - name: Switch_3
+            class: micro_smart_hub.devices.switchbox.MicroSwitch
+
+          - name: Task_1
+            class: micro_smart_hub.automations.irrigation.IrrigationAutomation
+
+          - name: Task_2
+            class: micro_smart_hub.automations.irrigation.IrrigationAutomation
+
+          - name: Task_3
+            class: micro_smart_hub.automations.irrigation.IrrigationAutomation
+
+  - name: console_interface
+    class: micro_console.console_interface.ConsoleInterface
+    parameters:
+      ui:
+        display_items:
+          # Top GroupBox: Micro Scheduler v0.1
+          - type: "groupbox"
+            title: "Micro Scheduler v0.1"
+            line: 1
+            column: 1
+            width: 100
+            height: 20  # Adjusted height to encompass all inner content
+
+          # GroupBox for Switches
+          - type: "groupbox"
+            title: "Switches"
+            line: 2
+            column: 2
+            width: 48
+            height: 5
+
+          # Labels for Switches
+          - type: "label"
+            label: "Switch 1 On"
+            component: "Switch_1"
+            attribute: "on"
+            line: 3
+            column: 4
+
+          - type: "label"
+            label: "Switch 2 On"
+            component: "Switch_2"
+            attribute: "on"
+            line: 4
+            column: 4
+
+          - type: "label"
+            label: "Switch 3 On"
+            component: "Switch_3"
+            attribute: "on"
+            line: 5
+            column: 4
+
+          # GroupBox for Tasks
+          - type: "groupbox"
+            title: "Tasks"
+            line: 2
+            column: 52
+            width: 48
+            height: 5
+
+          # Labels for Tasks
+          - type: "label"
+            label: "Task 1 Value"
+            component: "Task_1"
+            attribute: "value"
+            line: 3
+            column: 54
+
+          - type: "label"
+            label: "Task 2 Value"
+            component: "Task_2"
+            attribute: "value"
+            line: 4
+            column: 54
+
+          - type: "label"
+            label: "Task 3 Value"
+            component: "Task_3"
+            attribute: "value"
+            line: 5
+            column: 54
+
+          # GroupBox for System Information
+          - type: "groupbox"
+            title: "System Information"
+            line: 7
+            column: 2
+            width: 98
+            height: 6
+
+          # Labels for System Information
+          - type: "label"
+            label: "Current Time"
+            component: "scheduler_main"
+            attribute: "current_time"
+            line: 8
+            column: 4
+
+          - type: "label"
+            label: "Time to Next Action"
+            component: "scheduler_main"
+            attribute: "time_to_next_action"
+            line: 9
+            column: 4
+
+          - type: "label"
+            label: "Current Day"
+            component: "scheduler_main"
+            attribute: "current_day_name"
+            line: 10
+            column: 4
+
+          - type: "label"
+            label: "Next Action"
+            component: "scheduler_main"
+            attribute: "next_action_info"
+            line: 11
+            column: 4
+
+          # GroupBox for API Information
+          - type: "groupbox"
+            title: "API Information"
+            line: 13
+            column: 2
+            width: 98
+            height: 7
+
+          # Labels inside the API Information GroupBox
+          - type: "label"
+            label: "Host"
+            component: "registry_api"
+            attribute: "host"
+            line: 14
+            column: 4
+
+          - type: "label"
+            label: "Port"
+            component: "registry_api"
+            attribute: "port"
+            line: 15
+            column: 4
+
+          - type: "label"
+            label: "Prefix"
+            component: "registry_api"
+            attribute: "prefix"
+            line: 16
+            column: 4
+
+          - type: "label"
+            label: "Start Server"
+            component: "registry_api"
+            attribute: "start_server"
+            line: 17
+            column: 4
+
+          - type: "label"
+            label: "Version"
+            component: "registry_api"
+            attribute: "version"
+            line: 18
+            column: 4

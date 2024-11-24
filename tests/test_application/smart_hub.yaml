@@ -1,0 +1,42 @@
+# smart_hub.yaml
+
+components:
+  - name: registry_api
+    class: RegistryRestApi
+    parameters:
+      host: "0.0.0.0"
+      port: 8000
+      start_server: False  # Do not start Uvicorn server during tests      
+    children:
+      - name: component_api
+        class: ComponentRestApi
+
+  - name: scheduler_main
+    class: Scheduler
+    children:
+      - name: living_room_light
+        class: Light
+        parameters:
+          location: "Living Room"
+          brightness: 75
+
+      - name: hallway_thermostat
+        class: Thermostat
+        parameters:
+          location: "Hallway"
+          temperature: 21.5
+
+      - name: evening_lights_automation
+        class: Automation
+        parameters:
+          action: "turn_on"
+          target_devices:
+            - "living_room_light"
+
+      - name: morning_temperature_automation
+        class: Automation
+        parameters:
+          action: "set_temperature"
+          target_devices:
+            - "hallway_thermostat"
+          temperature: 23.0

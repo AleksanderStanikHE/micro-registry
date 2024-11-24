@@ -1,0 +1,4 @@
+components:
+  - name: test_component
+    class: test_module.TestComponent
+    parameters: {}
