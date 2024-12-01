@@ -6,6 +6,12 @@ authors = ["Aleksander Stanik <aleksander.stanik@hammerheadesengineers.com>"]
 license = "MIT"
 readme = "README.md"
 
+packages = [
+    { include = "micro_registry" }, 
+    { include = "micro_app.py" }
+]
+
+
 [tool.poetry.dependencies]
 python = "^3.9"
 PyYAML = "^6.0.2"
