@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.4.2 (2024-12-01)
+
+### Bug Fixes
+
+* fix(poetry): Corrected packages folders ([`25049ec`](https://github.com/AleksanderStanikHE/micro-registry/commit/25049ec7f3445dff9c606afad7c05e55623695dc))
+
+### Unknown
+
+* Merge pull request #1 from AleksanderStanikHE/ci/corrected-package-installation
+
+fix(poetry): Corrected packages folders ([`ba67825`](https://github.com/AleksanderStanikHE/micro-registry/commit/ba6782576a6f4ef51ce4b43ac80578ed954628ac))
+
+
 ## v0.4.1 (2024-11-24)
 
 ### Bug Fixes
