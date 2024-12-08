@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.4.3 (2024-12-08)
+
+### Bug Fixes
+
+* fix(poetry): Added support for python3.7 ([`a7cb9d1`](https://github.com/AleksanderStanikHE/micro-registry/commit/a7cb9d174c4b1f21b0cc0d11f6933201b079a326))
+
+### Unknown
+
+* Merge pull request #2 from AleksanderStanikHE/ci/corrected-package-installation
+
+fix(poetry): Added support for python3.7 ([`1383f64`](https://github.com/AleksanderStanikHE/micro-registry/commit/1383f6453b5ea6096bab0d7562468dc21bd46e90))
+
+
 ## v0.4.2 (2024-12-01)
 
 ### Bug Fixes
